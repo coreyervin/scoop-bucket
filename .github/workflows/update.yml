@@ -1,0 +1,50 @@
+name: Update
+
+# Checks coreyervin/yolk for a newer release and, if there is one, points the
+# manifest at its Windows zip and commits. The push then runs the Test workflow.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  yolk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Bump to the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest=$(gh api repos/coreyervin/yolk/releases/latest --jq .tag_name)
+          version=${latest#v}
+          current=$(jq -r .version bucket/yolk.json)
+          if [ "$version" = "$current" ]; then
+            echo "already at $current"
+            exit 0
+          fi
+
+          zip="Yolk-$version-windows-x64.zip"
+          url="https://github.com/coreyervin/yolk/releases/download/$latest/$zip"
+          # The release workflow attaches the zip a few minutes after the
+          # release is published; until then, try again next run.
+          if ! curl -fsSL -o "$zip" "$url"; then
+            echo "$zip isn't attached to $latest yet"
+            exit 0
+          fi
+          hash=$(sha256sum "$zip" | cut -d' ' -f1)
+
+          jq --indent 4 --arg v "$version" --arg u "$url" --arg h "$hash" \
+            '.version = $v | .architecture."64bit".url = $u | .architecture."64bit".hash = $h' \
+            bucket/yolk.json > bucket/yolk.json.new
+          mv bucket/yolk.json.new bucket/yolk.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "yolk: Update to version $version"
+          git push

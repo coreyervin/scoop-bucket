@@ -1,0 +1,36 @@
+name: Test
+
+# Installs every manifest with real Scoop on Windows and runs it, so a bad URL,
+# hash, or bin entry fails here rather than on someone's machine.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  install:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Scoop
+        run: |
+          # GitHub's runners are elevated; Scoop refuses that without the flag.
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path $env:USERPROFILE 'scoop\shims' | Out-File -Append $env:GITHUB_PATH
+
+      - name: Install yolk from this bucket
+        run: scoop install .\bucket\yolk.json
+
+      - name: Run it
+        run: |
+          $manifest = Get-Content bucket\yolk.json | ConvertFrom-Json
+          $version = yolk --version
+          if ($version -ne "yolk v$($manifest.version)") { throw "got '$version'" }
+          if (-not (Get-Command YolkApp -ErrorAction SilentlyContinue)) { throw "YolkApp is not on PATH" }
+          $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Scoop Apps\Yolk.lnk'
+          if (-not (Test-Path $shortcut)) { throw "no Start menu shortcut at $shortcut" }
+          "installed: $version"
