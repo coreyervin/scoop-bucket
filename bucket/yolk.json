@@ -1,5 +1,5 @@
 {
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Keep the PC awake and Slack and Teams active while AI agents run",
     "homepage": "https://github.com/coreyervin/yolk",
     "license": "MIT",
@@ -9,8 +9,8 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/coreyervin/yolk/releases/download/v1.1.1/Yolk-1.1.1-windows-x64.zip",
-            "hash": "e586ea76ba2bacffb72e2a3542ecd9267cf7608e42e3a251510849d97cea8dde"
+            "url": "https://github.com/coreyervin/yolk/releases/download/v1.1.2/Yolk-1.1.2-windows-x64.zip",
+            "hash": "1eb3c416202293caddb10aa3cbb232fafcec67349772a545b4b9e58e15b1c32e"
         }
     },
     "bin": [
